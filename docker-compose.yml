@@ -1,0 +1,17 @@
+version: "3"
+services:
+   jslave:
+     build: .
+     volumes:
+        - maven_repo:/cmsops/.m2/repository
+        - maven_bin:/usr/share/maven
+     # synchronize the time to host
+        - /etc/localtime:/etc/localtime:ro
+
+volumes:
+  maven_repo:
+    external:
+      name: maven_maven_repo
+  maven_bin:
+    external:
+      name: maven_maven_bin

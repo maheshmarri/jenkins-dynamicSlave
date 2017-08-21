@@ -1,0 +1,44 @@
+FROM docker:17.07-rc
+
+RUN apk add --no-cache  && \
+    apk upgrade && \
+    apk update && \
+    apk add git && \
+   apk add openssh dropbear ca-certificates wget bash openjdk8 && \
+   apk add subversion && \
+   apk add sudo
+
+
+
+# gen dummy keys, centos doesn't autogen them like ubuntu does
+RUN /usr/bin/ssh-keygen -A
+
+# Set SSH Configuration to allow remote logins without /proc write access
+RUN sed -i "s/#PermitRootLogin.*/PermitRootLogin yes/g" /etc/ssh/sshd_config 
+
+RUN adduser -D -u 440 -g 440 -h /home/cmsops cmsops && echo cmsops:cmsops | chpasswd
+
+# Add public key for Jenkins login
+RUN mkdir /home/cmsops/.ssh
+COPY /files/authorized_keys /root/.ssh/authorized_keys
+COPY /files/authorized_keys /home/cmsops/.ssh/authorized_keys
+
+RUN chown -R cmsops /home/cmsops
+RUN chgrp -R cmsops /home/cmsops
+RUN chmod 600 /root/.ssh/authorized_keys
+RUN chmod 700 /root/.ssh
+RUN chmod 600 /home/cmsops/.ssh/authorized_keys
+RUN chmod 700 /home/cmsops/.ssh
+
+# Add the jenkins user to sudoers
+RUN echo "cmsops  ALL=(ALL)  ALL" >> etc/sudoers
+
+# Set Name Servers
+COPY /files/resolv.conf /etc/resolv.conf
+
+#USER cmsops
+USER root
+
+# Expose SSH port and run SSHD
+EXPOSE 22
+CMD ["/usr/sbin/sshd","-D"]
